@@ -1,0 +1,435 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Postfix++ Interpreter</title>
+  <style>
+    :root{
+      --bg0:#07060b;
+      --bg1:#0b0a12;
+      --panel: rgba(255,255,255,.05);
+      --panel2: rgba(255,255,255,.035);
+      --border: rgba(255,255,255,.10);
+      --text:#eef0ff;
+      --muted:#b9b7d6;
+
+      --glow1:#a78bfa;
+      --glow2:#22d3ee;
+      --good:#3fe3a2;
+      --bad:#ff5d73;
+
+      --radius:18px;
+      --shadow: 0 20px 60px rgba(0,0,0,.55);
+
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+    }
+
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      min-height:100vh;
+      padding:26px;
+      color:var(--text);
+      font-family:var(--sans);
+      background:
+        radial-gradient(900px 500px at 18% 0%, rgba(167,139,250,.22) 0%, rgba(7,6,11,0) 58%),
+        radial-gradient(900px 500px at 85% 15%, rgba(34,211,238,.16) 0%, rgba(7,6,11,0) 62%),
+        linear-gradient(180deg, var(--bg1), var(--bg0));
+    }
+
+    .wrap{max-width: 1180px; margin:0 auto;}
+
+    header{
+      display:flex;
+      align-items:flex-end;
+      justify-content:space-between;
+      gap:14px;
+      flex-wrap:wrap;
+      margin-bottom:16px;
+    }
+
+    .title{
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+    }
+
+    h1{
+      margin:0;
+      font-size:30px;
+      letter-spacing:.6px;
+      font-weight:900;
+      text-shadow:
+        0 0 18px rgba(167,139,250,.35),
+        0 0 26px rgba(34,211,238,.18);
+    }
+
+    .sub{
+      color:var(--muted);
+      font-size:13.5px;
+      line-height:1.35;
+      max-width: 860px;
+    }
+
+    .chips{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+    .chip{
+      border:1px solid var(--border);
+      background: rgba(255,255,255,.04);
+      padding:7px 10px;
+      border-radius:999px;
+      font-size:12px;
+      font-family:var(--mono);
+      color: rgba(238,240,255,.92);
+    }
+    .chip b{color: var(--glow2); font-weight:800}
+    .chip i{color: var(--glow1); font-style:normal; font-weight:800}
+
+    .grid{
+      display:grid;
+      gap:14px;
+      grid-template-columns: 1.6fr .8fr;
+      align-items:stretch;
+    }
+    @media (max-width: 980px){
+      .grid{grid-template-columns:1fr;}
+    }
+
+    .card{
+      border:1px solid var(--border);
+      background: linear-gradient(180deg, var(--panel), var(--panel2));
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+
+    .cardHead{
+      padding:14px 14px 10px 14px;
+      border-bottom:1px solid rgba(255,255,255,.10);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+      background: rgba(0,0,0,.18);
+    }
+
+    .cardHead h2{
+      margin:0;
+      font-size:13px;
+      letter-spacing:.2px;
+      color: rgba(238,240,255,.92);
+      font-weight:900;
+      text-transform:uppercase;
+    }
+
+    .content{padding:14px;}
+
+    .history{
+      height: 360px;
+      overflow:auto;
+      padding-right:4px;
+      font-family:var(--mono);
+      font-size:13px;
+      line-height:1.45;
+    }
+
+    .entry{
+      border:1px solid rgba(255,255,255,.09);
+      background: rgba(0,0,0,.20);
+      border-radius: 16px;
+      padding: 10px 12px;
+      margin-bottom: 10px;
+    }
+
+    .row{
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-bottom:6px;
+      color: rgba(185,183,214,.95);
+      font-size:12px;
+    }
+
+    .tag-ok{color: var(--good); font-weight:900;}
+    .tag-bad{color: var(--bad); font-weight:900;}
+
+    .mono{font-family:var(--mono);}
+    .muted{color:var(--muted);}
+
+    .rightCol{
+      display:flex;
+      flex-direction:column;
+      gap:14px;
+    }
+
+    .stackBox{
+      font-family:var(--mono);
+      font-size:15px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.22);
+      white-space:nowrap;
+      overflow:auto;
+      color: rgba(238,240,255,.96);
+    }
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      font-family:var(--mono);
+      font-size:13px;
+      border-radius: 16px;
+      overflow:hidden;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.18);
+    }
+    th, td{
+      padding:10px 10px;
+      border-bottom:1px solid rgba(255,255,255,.08);
+      text-align:left;
+    }
+    th{
+      color: rgba(185,183,214,.95);
+      font-weight:900;
+      background: rgba(255,255,255,.04);
+    }
+    tr:last-child td{border-bottom:none;}
+
+    .inputBar{
+      margin-top:14px;
+      display:grid;
+      grid-template-columns: 1fr auto auto;
+      gap:12px;
+      align-items:center;
+    }
+    @media (max-width: 760px){
+      .inputBar{grid-template-columns:1fr; }
+    }
+
+    input[type="text"]{
+      width:100%;
+      padding:14px 14px;
+      border-radius: 16px;
+      border:1px solid rgba(167,139,250,.45);
+      background: rgba(0,0,0,.28);
+      color: rgba(238,240,255,.97);
+      font-family: var(--mono);
+      font-size: 14px;
+      outline:none;
+      box-shadow: 0 0 0 3px rgba(167,139,250,.10);
+    }
+    input[type="text"]:focus{
+      border-color: rgba(34,211,238,.55);
+      box-shadow:
+        0 0 0 4px rgba(34,211,238,.12),
+        0 0 26px rgba(34,211,238,.08);
+    }
+
+    .btn{
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(167,139,250,.18);
+      color: rgba(238,240,255,.97);
+      padding: 12px 16px;
+      border-radius: 16px;
+      font-weight:900;
+      cursor:pointer;
+      transition: transform .06s ease, background .16s ease, border-color .16s ease;
+      letter-spacing:.2px;
+      user-select:none;
+    }
+    .btn:hover{
+      background: rgba(167,139,250,.24);
+      border-color: rgba(167,139,250,.55);
+    }
+    .btn:active{transform: translateY(1px);}
+
+    .btn.danger{
+      background: rgba(255,93,115,.14);
+      border-color: rgba(255,93,115,.20);
+    }
+    .btn.danger:hover{
+      background: rgba(255,93,115,.20);
+      border-color: rgba(255,93,115,.55);
+    }
+
+    .help{
+      margin-top:10px;
+      color: rgba(185,183,214,.95);
+      font-size: 12.5px;
+      line-height:1.4;
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px 18px;
+    }
+    .help code{
+      font-family:var(--mono);
+      background: rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.10);
+      padding:2px 6px;
+      border-radius: 9px;
+      color: rgba(238,240,255,.97);
+    }
+
+    .status{
+      font-family:var(--mono);
+      font-size:12.5px;
+      color: rgba(185,183,214,.95);
+    }
+    .status b.ok{color: var(--good);}
+    .status b.bad{color: var(--bad);}
+      .pad{margin-top:12px;}
+    .pad:first-child{margin-top:0;}
+    .padTitle{
+      font-size:12px;
+      color: rgba(185,183,214,.9);
+      font-weight:900;
+      margin: 0 0 8px 0;
+      letter-spacing:.25px;
+    }
+    .padGrid{
+      display:grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap:8px;
+    }
+    .padGrid6{grid-template-columns: repeat(6, 1fr);}
+    .padGrid5{grid-template-columns: repeat(5, 1fr);}
+    .padVars{
+      display:grid;
+      grid-template-columns: repeat(8, 1fr);
+      gap:8px;
+    }
+    .keyBtn{
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.05);
+      color: rgba(238,240,255,.97);
+      padding: 10px 10px;
+      border-radius: 14px;
+      font-family: var(--mono);
+      font-weight:900;
+      cursor:pointer;
+      transition: transform .06s ease, background .16s ease, border-color .16s ease;
+      user-select:none;
+    }
+    .keyBtn:hover{transform: translateY(-1px); background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.18);}
+    .keyBtn:active{transform: translateY(0px) scale(.98);}
+    .keyBtn.tiny{padding: 9px 8px; font-size: 12px;}
+    .keyBtn.soft{background: rgba(167,139,250,.14);}
+    .keyBtn.ok{background: rgba(34,211,238,.14); border-color: rgba(34,211,238,.25);}
+    .keyBtn.warn{background: rgba(248,113,113,.14); border-color: rgba(248,113,113,.25);}
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <header>
+      <div class="title">
+        <h1>Postfix++ Interpreter</h1>
+        <div class="sub">
+          Enter one Postfix++ statement and press <span class="mono">Execute</span>.
+          Assignment example: <span class="mono">A 3 =</span>. Variables are <span class="mono">A–Z</span>.
+        </div>
+        <div class="chips">
+          <div class="chip"><b>Binary</b>: + - * / ^ MOD MIN MAX</div>
+          <div class="chip"><i>Unary</i>: ABS NEG SQRT EXP LN LOG10 COS SIN TAN FLOOR CEIL ROUND</div>
+          <div class="chip">Trig uses <b>radians</b></div>
+        </div>
+      </div>
+
+      <div class="status" id="status">
+        Status: <b class="ok">Ready</b>
+      </div>
+    </header>
+
+    <div class="grid">
+      <section class="card">
+        <div class="cardHead">
+          <h2>Session History</h2>
+          <div class="muted mono" style="font-size:12px;">latest at top</div>
+        </div>
+        <div class="content">
+          <div class="history" id="history"></div>
+
+          <div class="inputBar">
+            <input id="expr" type="text" placeholder="Enter expression (e.g., 10 3 *  5 +) or assignment (A 2 =)" autocomplete="off" />
+            <button id="execBtn" class="btn">Execute</button>
+            <button id="clearBtn" class="btn danger">Clear</button>
+          </div>
+
+          <div class="help">
+            <div>Tip: press <code>Enter</code> to execute</div>
+            <div>Example: <code>A 2 =</code> then <code>A 10 ^</code></div>
+            <div>Example: <code>1 LN</code> • <code>1000 LOG10</code></div>
+            <div>Example: <code>1.57079632679 SIN</code></div>
+          </div>
+        </div>
+      </section>
+
+      <aside class="rightCol">
+        <section class="card">
+          <div class="cardHead"><h2>Current Stack</h2></div>
+          <div class="content">
+            <div id="stack" class="stackBox">[]</div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="cardHead"><h2>Variables</h2></div>
+          <div class="content">
+            <table>
+              <thead><tr><th>Var</th><th>Value</th></tr></thead>
+              <tbody id="varsBody"></tbody>
+            </table>
+          </div>
+        </section>
+              <section class="card">
+          <div class="cardHead">
+            <h2>Keypad</h2>
+            <div class="muted mono" style="font-size:12px;">click to insert</div>
+          </div>
+          <div class="content">
+            <div class="pad">
+              <div class="padTitle">Digits</div>
+              <div id="padDigits" class="padGrid"></div>
+            </div>
+
+            <div class="pad">
+              <div class="padTitle">Operators</div>
+              <div id="padOps" class="padGrid padGrid6"></div>
+            </div>
+
+            <div class="pad">
+              <div class="padTitle">Functions</div>
+              <div id="padFuncs" class="padGrid padGrid6"></div>
+            </div>
+
+            <div class="pad">
+              <div class="padTitle">Stack</div>
+              <div id="padStack" class="padGrid padGrid5"></div>
+            </div>
+
+            <div class="pad">
+              <div class="padTitle">Variables</div>
+              <div id="padVars" class="padVars"></div>
+            </div>
+          </div>
+        </section>
+      </aside>
+    </div>
+  </div>
+
+  <script src="core.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
+
+
+
+
