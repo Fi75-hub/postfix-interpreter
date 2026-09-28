@@ -4,6 +4,9 @@ function formatNumericValue(x) {
   if (typeof x !== "number") return String(x);
   if (!Number.isFinite(x)) return String(x);
 
+  // Keep scientific notation intact and do not round a non-zero result to zero.
+  if (Math.abs(x) >= 1e21 || (x !== 0 && Math.abs(x) < 1e-8)) return String(x);
+
   const fixed = x.toFixed(8);
   return fixed.replace(/\.?0+$/, "");
 }
@@ -255,6 +258,20 @@ class PostfixInterpreter {
   
    //Evaluate one line of Postfix++.
   executeLine(inputLine) {
+    const previousStack = this.evalStack.items.slice();
+    const previousValues = this.symbolTable.values.slice();
+    const previousDefined = this.symbolTable.defined.slice();
+    try {
+      return this._executeLineUnchecked(inputLine);
+    } catch (error) {
+      this.evalStack.items = previousStack;
+      this.symbolTable.values = previousValues;
+      this.symbolTable.defined = previousDefined;
+      throw error;
+    }
+  }
+
+  _executeLineUnchecked(inputLine) {
     const line = String(inputLine ?? "").trim();
 
     if (line === "") return { output: this.evalStack.formatStack(), note: "Empty line" };

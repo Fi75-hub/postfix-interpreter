@@ -45,6 +45,14 @@ The first expression produces `[35]`; the variable expression produces `[59049]`
 
 ## Project context
 
-A University of London Computer Science coursework project associated with Algorithms and Data Structures II. The available files do not establish its precise assessment stage.
+Built for Algorithms and Data Structures II in the University of London Computer Science programme.
 
-This is an educational interpreter, with a deliberately small language. An invalid expression can modify the stack before raising an error; use `RESET` for a fresh session.
+If a line contains an invalid operation, its changes are rolled back. The stack and variables remain as they were before that line.
+
+## Tests
+
+With Node.js 18 or later:
+
+```sh
+node --test test/core.test.js
+```
